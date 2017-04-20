@@ -1,0 +1,12 @@
+<launch>
+
+	<node name="camera_world_in_world_static_tf" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 -0.5 0.5 -0.5 0.5 world camera_world">
+	</node>
+
+	<node name="camera_in_body_static_tf" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0.70710678 0.70710678 body camera">
+	</node>
+
+	<node name="okvis_node" pkg="okvis_ros" type="okvis_node_synchronous" output="screen" args="/home/mknowles/catkin_ws/src/okvis_ros/okvis/config/config_fpga_p2_euroc.yaml /home/mknowles/Datasets/bagfiles/euroc/V1_01_easy.bag">
+	</node>
+
+</launch>
