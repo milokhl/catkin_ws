@@ -1,0 +1,6 @@
+*.tgz
+*.gz
+*.tar
+*.txt
+*.pb
+*.pbtxt
