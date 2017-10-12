@@ -2,8 +2,9 @@
 import rospy
 import cv2
 from sensor_msgs.msg import Image
+from object_detection.msg import ObjectDetection, BoundingBox
 from cv_bridge import CvBridge, CvBridgeError
-import numpy as np  
+import numpy as np
 
 import six.moves.urllib as urllib
 import sys
@@ -76,7 +77,8 @@ class MobileNetSSD(object):
 
     # ROS Setup
     self.image_sub = rospy.Subscriber('/image_raw', Image, self.image_cb, queue_size =1)
-    self.image_pub = rospy.Publisher('/mnssd/detections', Image, queue_size=1)
+    self.image_pub = rospy.Publisher('/mnssd/debug_detections', Image, queue_size=1)
+    self.detections_pub = rospy.Publisher('mnssd/detections', ObjectDetection, queue_size=1)
     self.bridge = CvBridge()
 
     # MobileNetSSD setup
@@ -105,7 +107,7 @@ class MobileNetSSD(object):
     # Do detection
     boxes, scores, classes, num = self.detect(cv_image)
     
-    # Visualization of the results of a detection.
+    # Visualize the results for debugging and publish.
     vis_util.visualize_boxes_and_labels_on_image_array(
       cv_image,
       np.squeeze(boxes),
@@ -119,6 +121,27 @@ class MobileNetSSD(object):
       ros_img = self.bridge.cv2_to_imgmsg(cv_image, 'bgr8')
       ros_img.header.stamp = rospy.get_rostime()
       self.image_pub.publish(ros_img)
+    except:
+      pass
+
+    # Publish an ObjectDetection msg
+    try:
+      detection_msg = ObjectDetection()
+      detection_msg.header.stamp = rospy.get_rostime()
+      thresh = 0.3 # only detections above this threshold are published
+      limit = 5 # limits the number of detections in a msg
+      for i in range(limit):
+        if scores[0][i] > thresh:
+          det_class = category_index[classes[0][i]]['name'] if classes[0][i] in category_index else 'unknown'
+          detection_msg.classes.append(det_class)
+
+          detection_msg.scores.append(scores[0][i])
+
+          box = boxes[0][i]
+          detection_msg.boxes.append(BoundingBox(box[0], box[1], box[2], box[3]))
+
+      if len(detection_msg.classes) > 0:
+        self.detections_pub.publish(detection_msg)
     except:
       pass
 
